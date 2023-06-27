@@ -2,6 +2,7 @@ package gobert_test
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/go-skynet/go-bert.cpp"
@@ -25,6 +26,28 @@ var _ = Describe("gobert binding", func() {
 			embeddings, err := model.Embeddings("foo")
 			Expect(err).ToNot(HaveOccurred())
 			fmt.Println(embeddings)
+		})
+		It("truncate large context", func() {
+			model, err := New(filepath.Join("fixtures", "model.bin"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(model).ToNot(BeNil())
+			f, err := os.ReadFile("fixtures/shakespeare.txt")
+			Expect(err).ToNot(HaveOccurred())
+			embeddings, err := model.Embeddings(string(f))
+			Expect(err).ToNot(HaveOccurred())
+			fmt.Println(embeddings)
+		})
+	})
+	Context("Tokenize", func() {
+		It("get tokens", func() {
+			model, err := New(filepath.Join("fixtures", "model.bin"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(model).ToNot(BeNil())
+			f, err := os.ReadFile("fixtures/shakespeare.txt")
+			Expect(err).ToNot(HaveOccurred())
+			size, err := model.Tokenize(string(f))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(size).To(Equal(512))
 		})
 	})
 })

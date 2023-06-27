@@ -15,13 +15,24 @@ struct bert_state {
     } timing;
 };
 
-int bert_token_embeddings(void* params_ptr, void* state_pr, int *inp_tokens,int n_tokens, float * res_embeddings) {
-    const int64_t t_main_start_us = ggml_time_us();
+int bert_tokens(void* params_ptr, void* state_pr, int * res_tokens) {
     bert_params params = *(bert_params*) params_ptr;
     bert_state * st = (bert_state*) state_pr;
     bert_ctx * bctx = st->model;
 
     int N = bert_n_max_tokens(bctx);
+    // tokenize the prompt
+    std::vector<bert_vocab_id> tokens(N);
+    bert_tokenize(bctx, params.prompt, tokens.data(), res_tokens, N);
+    tokens.resize(*res_tokens);
+    return 0;   
+}
+
+int bert_token_embeddings(void* params_ptr, void* state_pr, int *inp_tokens,int n_tokens, float * res_embeddings) {
+    bert_params params = *(bert_params*) params_ptr;
+    bert_state * st = (bert_state*) state_pr;
+    bert_ctx * bctx = st->model;
+
     std::vector<bert_vocab_id> tokens(n_tokens);
     for (int i = 0; i < n_tokens; i++) {
         tokens.push_back(inp_tokens[i]);
@@ -29,14 +40,14 @@ int bert_token_embeddings(void* params_ptr, void* state_pr, int *inp_tokens,int 
     std::vector<float> embeddings(bert_n_embd(bctx));
     bert_eval(bctx, params.n_threads, tokens.data(), n_tokens, embeddings.data());
     
-    for (int i = 0; i < embeddings.size(); i++) {
+    int n_embeddings = embeddings.size();
+    for (int i = 0; i < n_embeddings; i++) {
                 res_embeddings[i]=embeddings[i];
     }
     return 0;   
 }
 
 int bert_embeddings(void* params_ptr, void* state_pr, float * res_embeddings) {
-    const int64_t t_main_start_us = ggml_time_us();
     bert_params params = *(bert_params*) params_ptr;
     bert_state * st = (bert_state*) state_pr;
     bert_ctx * bctx = st->model;
@@ -49,11 +60,9 @@ int bert_embeddings(void* params_ptr, void* state_pr, float * res_embeddings) {
     tokens.resize(n_tokens);
     std::vector<float> embeddings(bert_n_embd(bctx));
     bert_eval(bctx, params.n_threads, tokens.data(), n_tokens, embeddings.data());
-    
-    for (int i = 0; i < embeddings.size(); i++) {
+    int n_embeddings = embeddings.size();
+    for (int i = 0; i < n_embeddings; i++) {
                 res_embeddings[i]=embeddings[i];
-             //    printf("embedding %d\n",embeddings[i]);
-
     }
     return 0;   
 }
@@ -66,12 +75,10 @@ int bert_bootstrap(const char *model_path, void* state_pr)
 
     const int64_t t_start_us = ggml_time_us();
     bert_ctx * bctx;
-
     if ((bctx = bert_load_from_file(model_path)) == nullptr) {
             fprintf(stderr, "%s: failed to load model from '%s'\n", __func__, model_path);
             return 1;
     }
-    printf("loaded\n");
 
     state->model = bctx;
 
@@ -97,6 +104,5 @@ void* bert_allocate_params(const char *prompt,  int threads) {
     bert_params* params = new bert_params;
     params->n_threads = threads;
     params->prompt = prompt;
-    
     return params;
 }

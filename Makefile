@@ -146,6 +146,7 @@ bert.cpp/build:
 	cd bert.cpp && mkdir build
 
 bert.o: bert.cpp/build
+	cd bert.cpp && git apply ../increase_context_buffers_bert_cpp.patch || true
 	sed "s/#include <regex>/#include <regex>\n#include <unordered_map>/" bert.cpp/bert.cpp > bert.cpp/bert.tmp && mv bert.cpp/bert.tmp bert.cpp/bert.cpp
 	cd bert.cpp/build && cmake .. -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release && make
 	cp bert.cpp/build/CMakeFiles/bert.dir/bert.cpp.o bert.o
@@ -168,6 +169,7 @@ example:
 fixtures:
 	mkdir fixtures
 	wget -O fixtures/model.bin https://huggingface.co/skeskinen/ggml/resolve/main/all-MiniLM-L6-v2/ggml-model-q4_0.bin
+	wget -O fixtures/shakespeare.txt https://raw.githubusercontent.com/brunoklein99/deep-learning-notes/master/shakespeare.txt
 
 test: fixtures libgobert.a
 	@C_INCLUDE_PATH=${INCLUDE_PATH} LIBRARY_PATH=${LIBRARY_PATH} go test -v ./...

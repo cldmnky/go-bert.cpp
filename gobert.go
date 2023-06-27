@@ -28,6 +28,18 @@ func New(model string) (*Bert, error) {
 	return &Bert{state: state}, nil
 }
 
+func (l *Bert) Tokenize(text string, opts ...PredictOption) (int, error) {
+	po := NewPredictOptions(opts...)
+	params := C.bert_allocate_params(C.CString(text), C.int(po.Threads))
+	ret_tokens := C.int(0)
+	res := C.bert_tokens(params, l.state, &ret_tokens)
+	if res != 0 {
+		return 0, fmt.Errorf("tokenize failed")
+	}
+	C.bert_free_params(params)
+	return int(ret_tokens), nil
+}
+
 func (l *Bert) Embeddings(text string, opts ...PredictOption) ([]float32, error) {
 
 	po := NewPredictOptions(opts...)

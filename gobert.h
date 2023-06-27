@@ -4,6 +4,7 @@ extern "C" {
 
 #include <stdbool.h>
 
+int bert_tokens(void* params_ptr, void* state_pr, int * res_tokens);
 int bert_token_embeddings(void* params_ptr, void* state_pr, int *inp_tokens,int n_tokens, float * res_embeddings);
 int bert_embeddings(void* params_ptr, void* state_pr, float * res_embeddings);
 int bert_bootstrap(const char *model_path, void* state_pr);
